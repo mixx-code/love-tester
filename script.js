@@ -1,3 +1,11 @@
+async function getGender(name) {
+  const firstName = name.split(" ")[0]; // Ambil kata pertama
+  const response = await fetch(`https://api.genderize.io?name=${firstName}`);
+  if (!response.ok) throw new Error("Gagal mengambil gender");
+  const data = await response.json();
+  return data.gender;
+}
+
 function hitungJodoh(nama1, nama2) {
   const [namaA, namaB] = [nama1, nama2].sort();
   const gabungan = (namaA + namaB).toLowerCase();
@@ -46,7 +54,7 @@ function simpanRiwayat(nama1, nama2, hasil) {
     .padStart(2, "0")} - ${now.getFullYear()}`;
   const riwayat = JSON.parse(localStorage.getItem("riwayatJodoh")) || [];
   riwayat.unshift({ nama1, nama2, hasil, waktu: tanggal });
-  localStorage.setItem("riwayatJodoh", JSON.stringify(riwayat.slice(0, 10))); // Simpan max 10
+  localStorage.setItem("riwayatJodoh", JSON.stringify(riwayat.slice(0, 10)));
 }
 
 function tampilkanRiwayat() {
@@ -86,7 +94,7 @@ function tampilkanRiwayat() {
   container.innerHTML = html;
 }
 
-function cekJodoh() {
+async function cekJodoh() {
   const nama1 = document.getElementById("nama1").value.trim();
   const nama2 = document.getElementById("nama2").value.trim();
 
@@ -99,105 +107,132 @@ function cekJodoh() {
     return;
   }
 
-  const persentase = hitungJodoh(nama1, nama2);
-  let pesan = "";
+  try {
+    const [gender1, gender2] = await Promise.all([
+      getGender(nama1),
+      getGender(nama2),
+    ]);
 
-  if (persentase >= 80) {
-    pesan = "Wah kalian kayak kunci dan gembok yang pas banget! 🔐💕";
-  } else if (persentase >= 60) {
-    pesan = "Udah mirip couple-couple FYP TikTok 💃🕺";
-  } else if (persentase >= 40) {
-    pesan = "Bisa jadi cocok... asal gak baper duluan ya 😜";
-  } else {
-    pesan =
-      "Cinta memang tak harus memiliki... tapi siapa tahu besok beda cerita? 😅";
-  }
-
-  // 💖 Tampilkan progress bar lucu dalam SweetAlert2
-  Swal.fire({
-    title: `❤️ 0% Cocok Banget! ❤️`,
-    html: `
-  <div class="circular-progress" style="--value:${persentase};">
-    <span class="value-text">${persentase}%</span>
-  </div>
-  <br>
-  <strong>${nama1}</strong> & <strong>${nama2}</strong><br><br>
-  <i>"${pesan}"</i><br><br>
-  🌟 Cinta itu misteri... tapi kalian kayaknya serasi! 🌟
-
-  <style>
-    .circular-progress {
-      --size: 120px;
-      --thickness: 10px;
-      --color: #ff69b4;
-      width: var(--size);
-      height: var(--size);
-      border-radius: 50%;
-      background: conic-gradient(
-        var(--color) calc(var(--value) * 1%),
-        #eee 0
-      );
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto;
-      position: relative;
+    if (
+      (gender1 === "male" && gender2 === "male") ||
+      (gender1 === "female" && gender2 === "female")
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "Tidak Pro LGBT ❌",
+        text: `Pasangan Jomok Tidak Sehat! 😅`,
+        confirmButtonText: "OK 😐",
+      });
+      return;
     }
 
-    .circular-progress::before {
-      content: "";
-      width: calc(var(--size) - var(--thickness) * 2);
-      height: calc(var(--size) - var(--thickness) * 2);
-      border-radius: 50%;
-      background: #fff0f6;
-      position: absolute;
+    const persentase = hitungJodoh(nama1, nama2);
+    let pesan = "";
+
+    if (persentase >= 80) {
+      pesan = "Wah kalian kayak kunci dan gembok yang pas banget! 🔐💕";
+    } else if (persentase >= 60) {
+      pesan = "Udah mirip couple-couple FYP TikTok 💃🕺";
+    } else if (persentase >= 40) {
+      pesan = "Bisa jadi cocok... asal gak baper duluan ya 😜";
+    } else {
+      pesan =
+        "Cinta memang tak harus memiliki... tapi siapa tahu besok beda cerita? 😅";
     }
 
-    .value-text {
-      position: relative;
-      font-size: 1.3rem;
-      font-weight: bold;
-      color: #d63384;
-    }
-  </style>
-`,
+    Swal.fire({
+      title: `❤️ 0% Cocok Banget! ❤️`,
+      html: `
+      <div class="circular-progress" style="--value:${persentase};">
+        <span class="value-text">${persentase}%</span>
+      </div>
+      <br>
+      <strong>${nama1}</strong> & <strong>${nama2}</strong><br><br>
+      <i>"${pesan}"</i><br><br>
+      🌟 Cinta itu misteri... tapi kalian kayaknya serasi! 🌟
 
-    confirmButtonText: "Awww 💖",
-    background: "#fff0f6",
-    color: "#d63384",
-    showClass: {
-      popup: "animate__animated animate__rubberBand",
-    },
-    hideClass: {
-      popup: "animate__animated animate__fadeOutDown",
-    },
-    backdrop: `
+      <style>
+        .circular-progress {
+          --size: 120px;
+          --thickness: 10px;
+          --color: #ff69b4;
+          width: var(--size);
+          height: var(--size);
+          border-radius: 50%;
+          background: conic-gradient(
+            var(--color) calc(var(--value) * 1%),
+            #eee 0
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          position: relative;
+        }
+
+        .circular-progress::before {
+          content: "";
+          width: calc(var(--size) - var(--thickness) * 2);
+          height: calc(var(--size) - var(--thickness) * 2);
+          border-radius: 50%;
+          background: #fff0f6;
+          position: absolute;
+        }
+
+        .value-text {
+          position: relative;
+          font-size: 1.3rem;
+          font-weight: bold;
+          color: #d63384;
+        }
+      </style>
+      `,
+      confirmButtonText: "Awww 💖",
+      background: "#fff0f6",
+      color: "#d63384",
+      showClass: {
+        popup: "animate__animated animate__rubberBand",
+      },
+      hideClass: {
+        popup: "animate__animated animate__fadeOutDown",
+      },
+      backdrop: `
         rgba(255,192,203,0.4)
         url("https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif")
         left top
         no-repeat
       `,
-    didOpen: () => {
-      const progress = Swal.getPopup().querySelector(".circular-progress");
-      const valueText = Swal.getPopup().querySelector(".value-text");
-      const title = Swal.getTitle();
+      didOpen: () => {
+        const progress = Swal.getPopup().querySelector(".circular-progress");
+        const valueText = Swal.getPopup().querySelector(".value-text");
+        const title = Swal.getTitle();
 
-      let current = 0;
-      const animate = () => {
-        if (current <= persentase) {
-          progress.style.setProperty("--value", current);
-          valueText.textContent = `${current}%`;
-          title.textContent = `❤️ ${current}% Cocok Banget! ❤️`;
-          current++;
-          requestAnimationFrame(animate);
-        }
-      };
-      animate();
-    },
-  });
+        let current = 0;
+        const animate = () => {
+          if (current <= persentase) {
+            progress.style.setProperty("--value", current);
+            valueText.textContent = `${current}%`;
+            title.textContent = `❤️ ${current}% Cocok Banget! ❤️`;
+            current++;
+            requestAnimationFrame(animate);
+          }
+        };
+        animate();
+      },
+    });
 
-  simpanRiwayat(nama1, nama2, persentase);
-  tampilkanRiwayat();
+    simpanRiwayat(nama1, nama2, persentase);
+    tampilkanRiwayat();
+  } catch (err) {
+    Swal.fire({
+      icon: "error",
+      title: "Gagal Mengambil Gender 😢",
+      text: "Periksa koneksi atau nama yang valid.",
+    });
+  }
 }
 
-document.addEventListener("DOMContentLoaded", tampilkanRiwayat);
+// Batasi input hanya 1 kata (tanpa spasi)
+document.addEventListener("DOMContentLoaded", () => {
+  tampilkanRiwayat();
+});
