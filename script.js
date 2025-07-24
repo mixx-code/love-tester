@@ -1,5 +1,6 @@
 function hitungJodoh(nama1, nama2) {
-  const gabungan = (nama1 + nama2).toLowerCase();
+  const [namaA, namaB] = [nama1, nama2].sort();
+  const gabungan = (namaA + namaB).toLowerCase();
   const hurufSudah = [];
   const angka = [];
 
